@@ -1,0 +1,91 @@
+local player = game.Players.LocalPlayer
+local runService = game:GetService("RunService")
+
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:FindFirstChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.Parent = gui
+frame.Active = true
+frame.Draggable = true
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.Text = "X"
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.Parent = frame
+
+local bigHeadsButton = Instance.new("TextButton")
+bigHeadsButton.Size = UDim2.new(0, 150, 0, 50)
+bigHeadsButton.Position = UDim2.new(0.5, -75, 0.5, -25)
+bigHeadsButton.Text = "Cabezas Grandes"
+bigHeadsButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+bigHeadsButton.Parent = frame
+
+local isActive = false  -- Estado del sistema
+local originalSizes = {} -- Tabla para almacenar los tamaños originales
+
+-- Función para cambiar el tamaño de las cabezas y almacenar su tamaño original
+local function updateHeads()
+    local enemiesFolder = game.Workspace:FindFirstChild("enemies")
+    if enemiesFolder then
+        for _, enemy in pairs(enemiesFolder:GetChildren()) do
+            if enemy:IsA("Model") then
+                local head = enemy:FindFirstChild("Head")
+                if head and head:IsA("BasePart") then
+                    if not originalSizes[head] then
+                        originalSizes[head] = head.Size -- Guarda el tamaño original
+                    end
+                    head.Size = Vector3.new(5, 5, 5)
+                end
+            end
+        end
+    end
+end
+
+-- Función para restaurar los tamaños originales
+local function restoreHeads()
+    for head, size in pairs(originalSizes) do
+        if head and head.Parent then
+            head.Size = size -- Restaura el tamaño original
+        end
+    end
+    originalSizes = {} -- Limpia la lista después de restaurar
+end
+
+-- Activar/desactivar el sistema
+bigHeadsButton.MouseButton1Click:Connect(function()
+    isActive = not isActive
+    if isActive then
+        bigHeadsButton.Text = "Desactivar Cabezas Grandes"
+        bigHeadsButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        restoreHeads()
+        bigHeadsButton.Text = "Cabezas Grandes"
+        bigHeadsButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    end
+end)
+
+-- Bucle de RunService para buscar cambios constantemente y limpiar la lista si los modelos desaparecen
+runService.Heartbeat:Connect(function()
+    if isActive then
+        updateHeads()
+    end
+
+    -- Elimina las referencias de cabezas que ya no existen
+    for head, _ in pairs(originalSizes) do
+        if not head or not head.Parent then
+            originalSizes[head] = nil
+        end
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    restoreHeads()
+    gui:Destroy()
+end)
